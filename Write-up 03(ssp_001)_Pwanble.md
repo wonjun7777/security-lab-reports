@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
         }
     }
 ```
-C코드를 보았을때 name에 SBOF취약점이 있다는 것을 알수있다.
+C 코드를 보았을 때 name에 SBOF 취약점이 있다는 것을 알수있다.
 ``` console
 Arch:     i386-32-little
 RELRO:    Partial RELRO
@@ -70,11 +70,12 @@ Stack:    Canary found
 NX:       NX enabled
 PIE:      No PIE (0x8048000)
 ```
-또한 checksce명령어를 이용해 카나리가 켜겨있고 i386아키택처 라는 것을 알수 있었다.
+또한 checksec 명령어를 이용해 카나리가 켜져 있고 i386 아키텍처 라는 것을 알수 있었다.
 ---
 ## 어셈블리
 
-```asm0x0804872b <+0>:     push   ebp
+```asm
+0x0804872b <+0>:     push   ebp
    0x0804872c <+1>:     mov    ebp,esp
    0x0804872e <+3>:     push   edi
    0x0804872f <+4>:     sub    esp,0x94
@@ -167,8 +168,8 @@ PIE:      No PIE (0x8048000)
    0x08048887 <+348>:   leave
    0x08048888 <+349>:   ret
 ```
-이걸로 name변수의 크기가 64바이트라는것, 카나리를 gs로 선언해 ebp-0x8에 저장한다는것을 알수있으며
-스택구조가 name(64) | canary(4) | edi(4) | ebp(4) | ret 이라는 것도 알수있다.
+이걸로 name 변수의 크기가 64바이트라는것, 카나리 값을 gs:0x14에서 가져와 ebp-0x8에 저장한다는 것을 알 수 있으며
+스택구조가 name(64) | canary(4) | edi(4) | ebp(4) | ret 이라는 것도 알 수 있다.
 ---
 ## Exploit
 
@@ -199,8 +200,8 @@ r.sendline(payload)
 
 r.interactive()
 ```
-print(canary)위 코드는 카나리 릭으로 카나리의 값을 구하여 출력하게 한다.
-그 아래의 코드는 name에 넣을 payload를 스택구조에 맞춰 만들며 보낼 데이터를 문자열로 바꾸고 길이를 구해 인코딩 시킨뒤 보낸다. 
+`print(canary)` 위 코드는 카나리 leak을 통해 카나리의 값을 구해 출력한다.
+그 아래의 코드는 `name`에 넣을 payload를 스택구조에 맞춰 만들며 payload의 길이를 문자열로 변환한 뒤 인코딩하여 `Name Size`로 보내고, 이어서 payload를 전송한다. 
 ---
 ## 결과
 ``` console
