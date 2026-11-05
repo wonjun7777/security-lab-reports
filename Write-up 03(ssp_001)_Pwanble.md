@@ -72,7 +72,7 @@ Stack:    Canary found
 NX:       NX enabled
 PIE:      No PIE (0x8048000)
 ```
-또한 checksce명령어를 이용해 카나리가 켜겨있고 i386아키택처 라는 것을 알수 있었다.
+또한 checksce명령어를 이용해 카나리가 켜져있고 i386아키택처 라는 것을 알수 있었다.
 
 ---
 
