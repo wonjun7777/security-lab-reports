@@ -2,7 +2,7 @@
 
 - 분야: Pwnable
 - 주제: Stack Buffer Overflow + Stack Canary
-- 환경: Linux
+- 환경: Linux 
 
 ---
 
